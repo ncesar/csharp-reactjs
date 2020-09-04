@@ -1,13 +1,46 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.SpaServices.ReactDevelopmentServer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System;
+using System.Threading.Tasks;
 
 namespace WebApplication1
 {
+
+    public class CustomLogger
+    {
+        private readonly RequestDelegate _next;
+
+        public CustomLogger(RequestDelegate next)
+        {
+            _next = next ?? throw new ArgumentNullException(nameof(next));
+        }
+
+        public async Task Invoke(HttpContext httpContext)  //invoke é o codigo que é executado no request
+        {
+            if (httpContext == null) throw new
+            ArgumentNullException(nameof(httpContext));
+
+            // TODO - log the request
+
+            await _next(httpContext);
+
+            // TODO - log the response 
+        }
+    }
+    public static class MiddlewareExtensions
+    {
+        public static IApplicationBuilder UseCustomLogger(this
+        IApplicationBuilder app)
+        {
+            return app.UseMiddleware<CustomLogger>();
+        }
+    }
     public class Startup
     {
         public Startup(IConfiguration configuration)
@@ -33,6 +66,8 @@ namespace WebApplication1
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            app.UseCustomLogger();
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -47,7 +82,8 @@ namespace WebApplication1
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseSpaStaticFiles();
-
+            // geralmente os middleware são chamados com o app.Use
+            // ex: middleware de autenticação no método Configure
             app.UseRouting();
 
             app.UseEndpoints(endpoints =>
